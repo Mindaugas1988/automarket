@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Request;
+
+class AutotrainRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool
+     */
+
+    public function sanitize()
+    {
+        $this->merge([
+            'data' => json_decode($this->input('data'), true),
+            'logo' => json_decode($this->input('logo'), true)
+        ]);
+        return $this->all();
+    }
+
+    public function validator($factory)
+    {
+        return $factory->make(
+            $this->sanitize(), $this->container->call([$this, 'rules']), $this->messages()
+        );
+    }
+
+
+    public function authorize()
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array
+     */
+    public function rules()
+    {
+
+
+        $rules = [
+            'data.status' => ['required','array'],
+            'data.brand' => ['required','string'],
+            'data.model'=> ['required','string'],
+            'data.years'=> ['required','numeric'],
+            'data.type'=> ['required','array'],
+            'data.defect'=> ['required','array'],
+            'data.euro_standart'=> ['required','string'],
+            'data.gearbox'=> ['required','array'],
+            'data.wheel_formula'=> ['required','string'],
+            'data.price'=> ['required','numeric','between:100,300000', 'regex:/^[0-9]+$/'],
+            //
+            'logo'=> ['nullable','string'],
+            'data.ta_years'=> ['nullable','numeric'],
+            'data.mileage'=> ['nullable','numeric', 'between:0,10000000', 'regex:/^[0-9]+$/'],
+            'data.axles'=> ['nullable','array'],
+            'data.capacity'=> ['nullable','numeric','regex:/^[0-9]+$/'],
+            'data.overall_mass'=> ['nullable','numeric','between:1000,100000','regex:/^[0-9]+$/'],
+            'data.fuel_tank'=> ['nullable','numeric','between:100,1000','regex:/^[0-9]+$/'],
+            'data.engine'=> ['nullable','regex:/^(\d+)?([.]?\d{0,2})?$/'],
+            'data.lngth'=> ['nullable','numeric','between:1,100','regex:/^[0-9]+$/' ],
+            'data.width'=> ['nullable','numeric','between:1,9','regex:/^[0-9]+$/' ],
+            'data.height'=> ['nullable','numeric','between:1,9','regex:/^[0-9]+$/' ],
+            'data.own_weight'=> ['nullable','numeric','between:1000,100000','regex:/^[0-9]+$/'],
+            'data.power'=> ['nullable','numeric','between:30,1000', 'regex:/^[0-9]+$/'],
+            'data.vin'=> ['nullable','string','size:17','regex:/^[a-zA-Z\d]+$/'],
+            'data.beds'=> ['nullable','numeric','size:1'],
+            'data.color'=> ['nullable','array'],
+            'data.video_url'=> ['nullable','string','url','regex:/^((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?$/'],
+            //
+            'data.mobile_code'=> ['required','string','regex:/^\+/'],
+            'data.number'=> ['required','numeric','digits_between:7,10','regex:/^[0-9]+$/'],
+            'data.email'=> ['required','string','email'],
+            'data.country'=> ['required','array'],
+            'data.city'=> ['nullable','string','required_if:country_code,lt']
+        ];
+
+        if ($this->hasFile('photos')){
+            $photos = count([$this->photos]);
+            foreach(range(0, $photos) as $index) {
+                $rules['photos.' . $index] = 'image|mimes:jpeg,jpg,png|max:2000';
+            }
+        }
+
+        return $rules;
+
+    }
+
+    public function messages()
+    {
+        return [
+
+        ];
+    }
+
+
+
+    protected function failedValidation(Validator $validator)
+    {
+
+        throw new HttpResponseException(response()->json(
+            [
+                'errors' => $validator->errors(),
+                'status' => false
+            ]
+        ));
+    }
+}
